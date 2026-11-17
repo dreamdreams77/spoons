@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1D2A3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Spoons">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D2A3A'/%3E%3Cellipse cx='32' cy='20' rx='10' ry='13' fill='%23D9DEE2'/%3E%3Crect x='29.5' y='30' width='5' height='26' rx='2.5' fill='%23D9DEE2'/%3E%3C/svg%3E">
+<title>Spoons</title>
+<style>
+@font-face{font-family:"Bricolage";src:url("fonts/BricolageGrotesque.woff") format("woff");
+  font-weight:400 700;font-stretch:75% 100%;font-display:swap}
+@font-face{font-family:"Fraunces";src:url("fonts/Fraunces.woff") format("woff");
+  font-weight:360 600;font-display:swap}
+
+/* ---------- tokens ---------- */
+:root{
+  --bg:#E3E7EA; --surface:#F6F8F9; --line:#D2D8DD; --field:#FFFFFF;
+  --ink:#1D2A3A; --ink-2:#56636F; --ink-3:#8692A0;
+  --accent:#1D2A3A; --on-accent:#FFFFFF;
+  --drawer-a:#28384C; --drawer-b:#1A2635; --drawer-ink:#EEF2F5; --drawer-ink-2:#A9B6C3;
+  --honey:#E8A92B; --honey-soft:#F7E3B5; --honey-ink:#7A5208;
+  --plum:#9E3D55; --plum-soft:#F1DCE2; --plum-bright:#F2A7B8;
+  --paper:#FFFFFF; --tape:rgba(232,169,43,.55);
+  --shadow-lg:0 18px 40px -22px rgba(20,30,45,.55);
+  --radius-sm:10px; --radius-md:14px; --radius-lg:24px;
+  --ui:"Bricolage","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --serif:"Fraunces","Iowan Old Style",Georgia,serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#141C26; --surface:#1D2734; --line:#2B3746; --field:#18212C;
+  --ink:#E7EDF2; --ink-2:#A3B0BD; --ink-3:#6F7D8C;
+  --accent:#DCE5EC; --on-accent:#16202B;
+  --drawer-a:#1E2A39; --drawer-b:#0F1720; --drawer-ink:#EEF2F5; --drawer-ink-2:#93A2B1;
+  --honey:#EDB246; --honey-soft:#3A3020; --honey-ink:#F3CD7E;
+  --plum:#F09AB0; --plum-soft:#3A2330; --plum-bright:#F5A9BC;
+  --paper:#F3EEE4; --tape:rgba(237,178,70,.5);
+  --shadow-lg:0 18px 40px -20px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#141C26; --surface:#1D2734; --line:#2B3746; --field:#18212C;
+    --ink:#E7EDF2; --ink-2:#A3B0BD; --ink-3:#6F7D8C;
+    --accent:#DCE5EC; --on-accent:#16202B;
+    --drawer-a:#1E2A39; --drawer-b:#0F1720; --drawer-ink:#EEF2F5; --drawer-ink-2:#93A2B1;
+    --honey:#EDB246; --honey-soft:#3A3020; --honey-ink:#F3CD7E;
+    --plum:#F09AB0; --plum-soft:#3A2330; --plum-bright:#F5A9BC;
+    --paper:#F3EEE4; --tape:rgba(237,178,70,.5);
+    --shadow-lg:0 18px 40px -20px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.45;
+  font-optical-sizing:auto;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+  transition:background-color .3s ease,color .3s ease}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+:focus{outline:none}
+:focus-visible{outline:2.5px solid var(--honey);outline-offset:2px;border-radius:8px}
+.wrap{max-width:520px;margin:0 auto;padding:calc(20px + var(--safe-t)) 20px calc(104px + var(--safe-b))}
+.wrap.enter{animation:viewIn .28s var(--ease)}
+@keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.015em;text-wrap:balance}
+h1{font-size:34px;line-height:1.05;font-stretch:88%;font-weight:700;letter-spacing:-.025em}
+h2{font-size:21px;line-height:1.2;font-stretch:92%}
+h3{font-size:17px;font-weight:600}
+p{margin:0;text-wrap:pretty}
+.muted{color:var(--ink-2)}
+.small{font-size:14.5px}
+.stack>*+*{margin-top:14px}
+.hidden{display:none!important}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.sub{margin-top:6px;color:var(--ink-2)}
+
+/* ---------- the drawer (signature element) ---------- */
+.drawer{position:relative;margin:20px -4px 6px;padding:20px 14px 14px;border-radius:var(--radius-lg);
+  background:
+    radial-gradient(120% 70% at 50% 0%,rgba(255,255,255,.07),transparent 60%),
+    linear-gradient(180deg,var(--drawer-a),var(--drawer-b));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -14px 28px rgba(0,0,0,.28),var(--shadow-lg);
+  color:var(--drawer-ink);overflow:hidden}
+.drawer::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+.tray{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 0;min-height:88px;align-items:flex-end;position:relative;z-index:1}
+.spoon{width:30px;height:84px;display:block;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35));
+  transition:opacity .35s var(--ease),transform .35s var(--ease),filter .35s}
+.spoon.free .bowl,.spoon.free .handle{fill:url(#silver)}
+.spoon.planned{filter:none}
+.spoon.planned .bowl,.spoon.planned .handle{fill:rgba(255,255,255,.04);stroke:#8FA2B5;stroke-width:1.5;stroke-dasharray:3 3}
+.spoon.used{opacity:.3;filter:none;transform:translateY(3px)}
+.spoon.used .bowl,.spoon.used .handle{fill:#8E9AA5}
+.spoon.gift .bowl,.spoon.gift .handle{fill:url(#honey)}
+.spoon.gift{filter:drop-shadow(0 0 6px rgba(232,169,43,.45)) drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+.spoon.short{filter:none}
+.spoon.short .bowl,.spoon.short .handle{fill:rgba(242,167,184,.08);stroke:var(--plum-bright);stroke-width:1.7}
+.spoon.pop{animation:pop .5s var(--ease)}
+@keyframes pop{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-10px) scale(1.06)}100%{transform:translateY(0) scale(1)}}
+.spoon.used.pop{animation:drop .5s var(--ease)}
+@keyframes drop{0%{transform:translateY(-8px);opacity:1}100%{transform:translateY(3px);opacity:.3}}
+.drawer-read{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:12px;padding:0 6px}
+.big{font-size:44px;font-weight:700;font-stretch:78%;line-height:.9;letter-spacing:-.02em;font-variant-numeric:tabular-nums lining-nums}
+.big.warn{color:var(--plum-bright)}
+.of{color:var(--drawer-ink-2);font-size:15px}
+.legend{position:relative;z-index:1;display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--drawer-ink-2);padding:10px 6px 0}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.legend .l-free{background:#fff}.legend .l-plan{border:1.5px dashed #8FA2B5}
+.legend .l-used{background:#8E9AA5;opacity:.6}.legend .l-gift{background:var(--honey)}
+
+/* ---------- morning picker ---------- */
+.picker{position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:2px 0}
+.picker button{background:none;border:0;padding:4px 1px;border-radius:10px}
+.picker .spoon{height:96px;width:32px}
+.picker button[aria-pressed="false"] .spoon{filter:none}
+.picker button[aria-pressed="false"] .spoon .bowl,.picker button[aria-pressed="false"] .spoon .handle{fill:rgba(255,255,255,.03);stroke:#5F7286;stroke-width:1.4}
+.picker button:active .spoon{transform:translateY(-5px)}
+.picked-line{position:relative;z-index:1;text-align:center;margin-top:10px}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;
+  padding:13px 22px;font-weight:600;font-size:16.5px;background:var(--accent);color:var(--on-accent);min-height:50px;
+  transition:transform .12s var(--ease),opacity .2s,background-color .3s}
+.btn:active{transform:scale(.97)}
+.btn.wide{width:100%}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.small{padding:8px 15px;min-height:40px;font-size:15px}
+.btn.danger{background:var(--plum);color:#fff}
+.link{background:none;border:0;padding:6px 0;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+
+/* ---------- things ---------- */
+.things{list-style:none;margin:0;padding:0}
+.thing{background:var(--surface);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden;
+  box-shadow:0 1px 0 var(--line);transition:background-color .3s}
+.thing-row{display:flex;align-items:center;gap:12px;padding:10px 6px 10px 12px;min-height:60px}
+.check{flex:none;width:32px;height:32px;border-radius:50%;border:2px solid var(--ink-3);background:transparent;
+  display:grid;place-items:center;padding:0;transition:background-color .2s,border-color .2s,transform .15s var(--ease)}
+.check:active{transform:scale(.88)}
+.check svg path{stroke:var(--on-accent);stroke-dasharray:16;stroke-dashoffset:16}
+.thing.done .check{background:var(--accent);border-color:var(--accent)}
+.thing.done .check svg path{stroke-dashoffset:0}
+.thing.just.done .check svg path{animation:draw .4s var(--ease) .05s both}
+@keyframes draw{from{stroke-dashoffset:16}to{stroke-dashoffset:0}}
+.thing.just .check{animation:tick .4s var(--ease)}
+@keyframes tick{40%{transform:scale(1.15)}}
+.thing.gives.done .check{background:var(--honey);border-color:var(--honey)}
+.thing.gives.done .check svg path{stroke:#1D2A3A}
+.thing-name{flex:1;min-width:0;overflow-wrap:anywhere;transition:color .3s}
+.thing.done .thing-name{color:var(--ink-2)}
+.cost{flex:none;display:flex;gap:2px;align-items:center;font-size:14px;color:var(--ink-2)}
+.cost .pip{width:7px;height:18px;border-radius:4px 4px 2px 2px;background:var(--ink-3);opacity:.8}
+.thing.gives .cost .pip{background:var(--honey);opacity:1}
+.cost .plus{font-weight:700;color:var(--honey-ink);margin-right:2px}
+.more{flex:none;background:none;border:0;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2)}
+.more:active{background:var(--line)}
+.thing-actions{display:flex;flex-wrap:wrap;gap:8px;padding:0 12px 14px 56px;animation:viewIn .2s var(--ease)}
+.stepper{display:inline-flex;align-items:center;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--line)}
+.stepper button{border:0;background:none;width:40px;height:40px;font-size:20px;line-height:1;color:var(--ink)}
+.stepper span{min-width:66px;text-align:center;font-size:15px;font-variant-numeric:tabular-nums}
+
+.section-head{display:flex;justify-content:space-between;align-items:baseline;margin:28px 0 10px}
+.empty{padding:18px;border-radius:var(--radius-md);border:1.5px dashed var(--ink-3);color:var(--ink-2)}
+
+.over{background:var(--plum-soft);border-radius:var(--radius-md);padding:14px 14px 10px;margin-top:14px;animation:viewIn .25s var(--ease)}
+.over h3{color:var(--plum)}
+.over-list{list-style:none;margin:10px 0 0;padding:0}
+.over-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid color-mix(in srgb,var(--plum) 22%,transparent)}
+.flat{background:var(--surface);border-left:3px solid var(--honey);padding:12px 14px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-top:14px}
+
+/* ---------- sheet ---------- */
+.scrim{position:fixed;inset:0;background:rgba(10,16,24,.5);z-index:20;animation:fade .2s ease}
+.scrim.out{animation:fadeOut .2s ease forwards}
+@keyframes fade{from{opacity:0}}
+@keyframes fadeOut{to{opacity:0}}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-height:88vh;overflow:auto;overscroll-behavior:contain;
+  background:var(--bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  padding:8px 20px calc(24px + var(--safe-b));max-width:560px;margin:0 auto;
+  box-shadow:0 -10px 40px -10px rgba(0,0,0,.4);animation:rise .32s var(--ease)}
+.sheet.out{transition:transform .22s ease-in;transform:translateY(105%)!important}
+@keyframes rise{from{transform:translateY(100%)}to{transform:none}}
+.grab{padding:8px 0 14px;margin:0 -20px;touch-action:none;cursor:grab}
+.grab::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--ink-3);margin:0 auto;opacity:.6}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:0;border-radius:999px;padding:9px 14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);
+  display:inline-flex;gap:8px;align-items:center;font-size:15px;min-height:42px;transition:background-color .2s,color .2s,transform .12s var(--ease)}
+.chip:active{transform:scale(.96)}
+.chip .n{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.chip.gives{background:var(--honey-soft);box-shadow:none}
+.chip.gives .n{color:var(--honey-ink)}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);box-shadow:none}
+.chip[aria-pressed="true"] .n{color:inherit;opacity:.7}
+.chip.added{animation:tick .35s var(--ease)}
+.chip.off{opacity:.55;text-decoration:line-through}
+.field{display:block;width:100%;border:0;border-radius:var(--radius-sm);background:var(--field);padding:13px 14px;
+  box-shadow:inset 0 0 0 1.5px var(--line);min-height:50px;transition:box-shadow .2s}
+.field:focus{box-shadow:inset 0 0 0 2px var(--ink-2)}
+textarea.field{min-height:110px;resize:vertical;line-height:1.5}
+.seg{display:flex;background:var(--line);border-radius:999px;padding:3px}
+.seg button{flex:1;border:0;background:none;border-radius:999px;padding:9px 10px;font-size:15px;transition:background-color .2s}
+.seg button[aria-pressed="true"]{background:var(--surface);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.row{display:flex;gap:10px;align-items:center}
+.row.between{justify-content:space-between}
+label.lbl{display:block;font-size:14.5px;color:var(--ink-2);margin-bottom:6px}
+input[type=checkbox]{accent-color:var(--ink)}
+
+/* ---------- note ---------- */
+.note{background:var(--paper);color:#1D2A3A;border-radius:3px;padding:26px 22px 22px;position:relative;
+  box-shadow:0 1px 0 rgba(0,0,0,.06),var(--shadow-lg);transform:rotate(-.6deg);
+  font-family:var(--serif);font-size:17px;line-height:1.55;font-weight:400;font-variation-settings:"opsz" 18}
+.note::before{content:"";position:absolute;top:-10px;left:50%;width:86px;height:22px;margin-left:-43px;background:var(--tape);transform:rotate(2deg)}
+.note .ln{padding-left:1.1em;text-indent:-1.1em}
+.note .gap{height:.9em}
+.note .ln:last-child{font-style:normal;font-weight:560}
+.welcome .note{animation:noteIn .7s var(--ease) .1s both}
+@keyframes noteIn{from{opacity:0;transform:translateY(14px) rotate(-2deg)}to{opacity:1;transform:rotate(-.6deg)}}
+.serif{font-family:var(--serif);font-variation-settings:"opsz" 36}
+.kind-words{font-family:var(--serif);font-size:23px;font-weight:500;letter-spacing:-.01em;margin-top:10px;font-variation-settings:"opsz" 48}
+
+/* ---------- jar ---------- */
+.day-card{background:var(--surface);border-radius:var(--radius-md);padding:14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line)}
+.day-card .row{margin-bottom:8px}
+.mini-tray{display:inline-flex;gap:2px;align-items:flex-end;background:linear-gradient(180deg,var(--drawer-a),var(--drawer-b));border-radius:8px;padding:6px 8px;margin-bottom:10px}
+.mini-tray .spoon{width:12px;height:32px;filter:none}
+.done-list{display:flex;flex-wrap:wrap;gap:6px}
+.done-list span{font-size:14px;background:var(--bg);border-radius:999px;padding:4px 10px}
+.done-list span.gives{background:var(--honey-soft)}
+.day-note{margin-top:10px;font-family:var(--serif);font-style:normal;color:var(--ink-2)}
+.jar-count{display:flex;align-items:center;gap:16px;margin:14px 0 22px}
+.jar-count .big{color:var(--ink);font-size:56px}
+
+/* ---------- patterns ---------- */
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:160px;margin-top:14px}
+.bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}
+.bar .fill{width:100%;max-width:34px;border-radius:7px 7px 3px 3px;background:linear-gradient(90deg,#9AA6B1,#fff 35%,#D3DAE0 60%,#8E9AA5);
+  transform-origin:bottom;animation:grow .6s var(--ease) both}
+.bar:nth-child(2) .fill{animation-delay:.04s}.bar:nth-child(3) .fill{animation-delay:.08s}.bar:nth-child(4) .fill{animation-delay:.12s}
+.bar:nth-child(5) .fill{animation-delay:.16s}.bar:nth-child(6) .fill{animation-delay:.2s}.bar:nth-child(7) .fill{animation-delay:.24s}
+@keyframes grow{from{transform:scaleY(0)}}
+.bar .fill.none{background:none;border:1.5px dashed var(--ink-3);height:4px!important;animation:none}
+.bar .v{font-size:14px;font-variant-numeric:tabular-nums;font-weight:600}
+.bar .d{font-size:13px;color:var(--ink-2)}
+.insight{background:var(--surface);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 0 var(--line)}
+.insight p+p{margin-top:4px}
+
+/* ---------- settings ---------- */
+.preset{border-bottom:1px solid var(--line)}
+.preset-row{display:flex;align-items:center;gap:10px;padding:11px 0;width:100%;border:0;background:none;text-align:left}
+.preset-row .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.preset-row .tag{border-radius:999px;padding:3px 10px;font-size:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-variant-numeric:tabular-nums}
+.preset-row .tag.gives{background:var(--honey-soft);box-shadow:none;color:var(--honey-ink)}
+.preset-edit{padding:4px 0 16px;animation:viewIn .2s var(--ease)}
+.about{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-2)}
+.about dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:10px 0 0}
+.about dt{color:var(--ink-3)}
+.about dd{margin:0}
+
+/* ---------- nav ---------- */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);
+  border-top:1px solid var(--line);padding:6px 10px calc(6px + var(--safe-b))}
+nav.tabs .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+nav.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:12px;color:var(--ink-3);padding:6px 0;border-radius:14px;min-height:54px;transition:color .2s}
+nav.tabs button svg{width:24px;height:24px;transition:transform .25s var(--ease)}
+nav.tabs button[aria-current="page"]{color:var(--ink);font-weight:600}
+nav.tabs button[aria-current="page"] svg{transform:translateY(-1px)}
+nav.tabs button[aria-current="page"]::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--honey);margin-top:1px}
+
+.toast{position:fixed;left:50%;bottom:calc(86px + var(--safe-b));transform:translateX(-50%);z-index:30;
+  background:var(--accent);color:var(--on-accent);border-radius:999px;padding:10px 18px;font-size:15px;
+  box-shadow:0 12px 28px -12px rgba(0,0,0,.55);display:flex;gap:14px;align-items:center;max-width:92vw;
+  animation:toastIn .3s var(--ease)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}}
+.toast button{background:none;border:0;color:var(--honey);font-weight:700;padding:4px 2px}
+:root[data-theme="dark"] .toast button{color:#9A6608}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .toast button{color:#9A6608}}
+.x{border:0;background:none;width:40px;height:40px;border-radius:50%;color:var(--ink-2);font-size:20px}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="silver" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#9AA6B1"/><stop offset=".35" stop-color="#FFFFFF"/>
+      <stop offset=".6" stop-color="#D3DAE0"/><stop offset="1" stop-color="#8E9AA5"/>
+    </linearGradient>
+    <linearGradient id="honey" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#B9801A"/><stop offset=".4" stop-color="#FFE29A"/>
+      <stop offset=".65" stop-color="#E8A92B"/><stop offset="1" stop-color="#A9730F"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<main class="wrap" id="app" aria-live="polite"></main>
+<nav class="tabs hidden" id="tabs" aria-label="Sections"><div class="in">
+  <button data-go="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="7" rx="4" ry="5"/><path d="M12 12v9"/></svg>Today</button>
+  <button data-go="jar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8M7 6h10M7 6c-2 2-3 4-3 7v5a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-5c0-3-1-5-3-7"/><path d="M8 15h8"/></svg>Jar</button>
+  <button data-go="patterns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 20V12M10 20V7M15 20v-6M20 20V4"/></svg>Patterns</button>
+  <button data-go="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Settings</button>
+</div></nav>
+<div id="layer"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ================= data ================= */
+const KEY = "spoons.v1";
+const VERSION = "1.0";
+const MAX = 12;
+const DAY_ROLLS_AT = 4; // a day runs 4am to 4am, so late nights still count as "today"
+
+const DEFAULT_NOTE =
+"Some mornings the drawer is full, and some are bare.\nCount what you've got, not what isn't there.\n\nSpend them slowly, the way the kettle takes its time.\nNot every hill today is yours to climb.\n\nCoffee, a nap, a small voice saying \"come and play\":\nsome things take a spoon, and some give one your way.\n\nWhat didn't happen keeps. Tomorrow has a shelf.\nWhat did is in the jar. Be patient with yourself.\n\nFlat days still count. Grumpy days count too.\nThe day was never asking more than you.\n\nSo stir it slow, and let today be enough for you:\none spoon of sugar, or two.";
+
+/* days: 0 Sun … 6 Sat. Things with days are suggested on those mornings. */
+const MON_FRI=[1,2,3,4], KINDER=[1,3,4];
+const DEFAULT_PRESETS = [
+  ["Kinder drop-off",1,"cost",KINDER],["Kinder pickup",1,"cost",KINDER],
+  ["Work day",2,"cost",MON_FRI],["Easy Friday work",1,"cost",[5]],
+  ["Office day",3,"cost"],["Back-to-back meetings",3,"cost"],["Cook dinner",2,"cost"],
+  ["Bath and bedtime",2,"cost"],["Pick up Nonna",1,"cost",[0]],["Luca's swimming",2,"cost",[0]],["Woolies run",2,"cost"],
+  ["Washing",1,"cost"],["Shower",1,"cost"],["Catch-up with people",3,"cost"],
+  ["Coffee",1,"gives"],["Big glass of water",1,"gives"],["Pre-dinner nap",2,"gives"],
+  ["Playtime with Luca",1,"gives"],["Cafe after swim",1,"gives",[0]],["A Switch game",1,"gives"],
+  ["Walk outside",1,"gives"],["Maccas",1,"gives"]
+];
+function defaultPresets(){ return DEFAULT_PRESETS.map(([name,cost,kind,days])=>({id:uid(),name,cost,kind,days:(days||[]).slice()})); }
+
+function uid(){ return Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
+function fresh(){
+  return { v:3, welcomed:false, note:DEFAULT_NOTE, presets: defaultPresets(), days:{}, carry:[] };
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return fresh();
+    const s = JSON.parse(raw);
+    if(!s || typeof s!=="object" || !s.days) return fresh();
+    s.presets = Array.isArray(s.presets)? s.presets : fresh().presets;
+    s.carry = Array.isArray(s.carry)? s.carry : [];
+    if(typeof s.note!=="string") s.note = DEFAULT_NOTE;
+    if(!s.v || s.v<2){ // first version: swap in the poem and the weekly usual things
+      if(s.note.indexOf("You told me once you'd run out of spoons")>=0) s.note = DEFAULT_NOTE;
+      s.presets = defaultPresets(); s.v = 2;
+    }
+    s.presets.forEach(p=>{ if(!Array.isArray(p.days)) p.days=[]; });
+    if(s.v<3){ // Sunday routine
+      s.presets.forEach(p=>{ if(p.name==="Swimming lesson"){ p.name="Luca's swimming"; } if((p.name==="Luca's swimming"||p.name==="Cafe after swim") && p.days.indexOf(0)<0) p.days.push(0); });
+      if(!s.presets.some(p=>p.name==="Pick up Nonna")) s.presets.splice(Math.max(0,s.presets.findIndex(p=>p.name==="Luca's swimming")),0,{id:uid(),name:"Pick up Nonna",cost:1,kind:"cost",days:[0]});
+      s.v=3;
+    }
+    return s;
+  }catch(e){ return fresh(); }
+}
+let S = load();
+let memoryOnly = false;
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ if(!memoryOnly){ memoryOnly = true; toast("This browser won't keep data. Add Spoons to your home screen to save it."); } }
+}
+
+/* ================= dates ================= */
+function pad(n){ return String(n).padStart(2,"0"); }
+function keyOf(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function todayKey(){ const d = new Date(Date.now() - DAY_ROLLS_AT*3600e3); return keyOf(d); }
+function parseKey(k){ const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d); }
+const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const WD_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function niceDate(k){ const d=parseKey(k); return WD_LONG[d.getDay()]+" "+d.getDate()+" "+MON[d.getMonth()]; }
+
+/* any day left open before today gets closed quietly: nothing carried, nothing lost */
+function autoClose(){
+  const t = todayKey(); let changed=false;
+  for(const k of Object.keys(S.days)){
+    const d=S.days[k];
+    if(k<t && !d.closed){ d.closed=true; d.auto=true; changed=true; }
+  }
+  if(changed) save();
+}
+
+/* ================= maths ================= */
+function sums(day){
+  let planned=0, spent=0, giftsDone=0, giftsPlanned=0;
+  for(const t of day.tasks){
+    if(t.kind==="gives"){ giftsPlanned+=t.cost; if(t.done) giftsDone+=t.cost; }
+    else { planned+=t.cost; if(t.done) spent+=t.cost; }
+  }
+  const have = day.budget + giftsDone;
+  return { planned, spent, giftsDone, giftsPlanned, have, free: have - planned };
+}
+function spoonWord(n){ return n===1? "spoon":"spoons"; }
+
+/* ================= helpers ================= */
+const $app = document.getElementById("app");
+const $layer = document.getElementById("layer");
+const $tabs = document.getElementById("tabs");
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+const SPOON_INNER = '<ellipse class="bowl" cx="15" cy="17" rx="10.5" ry="15"/><path class="handle" d="M13 31 C13 40 12 56 12.2 70 C12.3 76 13 80 15 80 C17 80 17.7 76 17.8 70 C18 56 17 40 17 31 Z"/>';
+function spoon(cls){ return '<svg class="spoon '+cls+'" viewBox="0 0 30 84" aria-hidden="true">'+SPOON_INNER+'</svg>'; }
+function noteHtml(t){ return String(t).split("\n").map(l=>l.trim()? '<div class="ln">'+esc(l)+'</div>' : '<div class="gap"></div>').join(""); }
+function pips(t){
+  let h = t.kind==="gives"? '<span class="plus">+</span>' : "";
+  for(let i=0;i<t.cost;i++) h+='<span class="pip"></span>';
+  const word = (t.kind==="gives"? "gives back ":"costs ")+t.cost+" "+spoonWord(t.cost);
+  return '<span class="cost" aria-label="'+word+'" title="'+word+'">'+h+'</span>';
+}
+
+let toastTimer=null;
+function toast(msg, actionLabel, action){
+  const old=document.querySelector(".toast"); if(old) old.remove();
+  const el=document.createElement("div"); el.className="toast"; el.setAttribute("role","status");
+  el.innerHTML='<span>'+esc(msg)+'</span>'+(actionLabel?'<button type="button">'+esc(actionLabel)+'</button>':"");
+  if(actionLabel) el.querySelector("button").onclick=()=>{ el.remove(); action(); };
+  document.body.appendChild(el);
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.remove(), actionLabel?6000:3200);
+}
+
+/* ================= theme + feel ================= */
+const metaTheme = document.querySelector('meta[name="theme-color"]');
+function applyTheme(){
+  const t = S.theme || "auto", root = document.documentElement;
+  if(t==="auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", t);
+  const dark = t==="dark" || (t==="auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  if(metaTheme) metaTheme.setAttribute("content", dark? "#141C26" : "#E3E7EA");
+}
+try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme); }catch(_){}
+applyTheme();
+function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||8); }catch(_){} }
+
+/* ================= routing ================= */
+let view = "today";
+let lastViewId = null, prevTray = null, justToggled = null;
+let openTask = null;    // id of task with actions expanded
+let pickBudget = null;  // morning picker value
+function go(v){ view=v; openTask=null; editPreset=null; render(); window.scrollTo(0,0); }
+$tabs.addEventListener("click", e=>{ const b=e.target.closest("[data-go]"); if(b) go(b.dataset.go); });
+
+function render(){
+  autoClose();
+  if(!S.welcomed){ $tabs.classList.add("hidden"); $app.innerHTML = welcomeView(); return; }
+  $tabs.classList.remove("hidden");
+  $tabs.querySelectorAll("[data-go]").forEach(b=>{ if(b.dataset.go===view) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  const html = view==="jar"? jarView() : view==="patterns"? patternsView() : view==="settings"? settingsView() : todayView();
+  $app.innerHTML = html;
+  const viewId = view + (S.days[todayKey()]? (S.days[todayKey()].closed?"-closed":"-open") : "-morning");
+  if(viewId!==lastViewId){ $app.classList.remove("enter"); void $app.offsetWidth; $app.classList.add("enter"); lastViewId=viewId; prevTray=null; }
+  // spoons that changed state since the last paint get a small lift
+  const tray = $app.querySelector(".drawer .tray");
+  if(tray){
+    const now=[...tray.children].map(el=>el.getAttribute("class"));
+    if(prevTray) [...tray.children].forEach((el,i)=>{ if(prevTray[i]!==now[i]) el.classList.add("pop"); });
+    prevTray=now;
+  }
+  justToggled=null;
+}
+
+/* ================= welcome ================= */
+function welcomeView(){
+  return '<div class="stack welcome" style="padding-top:28px">'+
+    '<h1>Spoons</h1>'+
+    '<p class="muted">A drawer for the energy you\'ve got today.</p>'+
+    '<div class="note" style="margin-top:30px">'+noteHtml(S.note)+'</div>'+
+    '<div style="padding-top:26px"><button class="btn wide" data-act="welcome">Open the drawer</button></div>'+
+  '</div>';
+}
+
+/* ================= today ================= */
+function todayView(){
+  const k = todayKey(); const day = S.days[k];
+  if(!day) return morningView(k);
+  if(day.closed) return closedView(k, day);
+  const m = sums(day);
+  let tray = "";
+  // spoons you have: used first, then planned-but-not-done, then free
+  const unitsUsed = Math.min(m.spent, m.have);
+  const unitsPlanned = Math.max(0, Math.min(m.planned - m.spent, m.have - unitsUsed));
+  const unitsFree = Math.max(0, m.have - unitsUsed - unitsPlanned);
+  const over = Math.max(0, m.planned - m.have);
+  const overShown = Math.min(over, MAX);
+  for(let i=0;i<unitsUsed;i++) tray+=spoon("used");
+  for(let i=0;i<unitsPlanned;i++) tray+=spoon("planned");
+  // free spoons: show earned (gift) spoons in honey
+  const giftFree = Math.min(m.giftsDone, unitsFree);
+  for(let i=0;i<unitsFree-giftFree;i++) tray+=spoon("free");
+  for(let i=0;i<giftFree;i++) tray+=spoon("gift");
+  for(let i=0;i<overShown;i++) tray+=spoon("short");
+
+  const headline = over>0
+    ? '<span class="big warn">'+over+'</span> <span class="of">over what you\'ve got</span>'
+    : '<span class="big">'+m.free+'</span> <span class="of">'+spoonWord(m.free)+' free</span>';
+  const readRight = '<span class="of">used '+m.spent+' of '+day.budget+(m.giftsDone?' + '+m.giftsDone:'')+'</span>';
+
+  let h = '<div class="row between"><div><h1>'+WD_LONG[parseKey(k).getDay()]+'</h1><p class="muted small">'+niceDate(k).split(" ").slice(1).join(" ")+'</p></div>'+
+          '<button class="btn ghost small" data-act="rebudget">Change spoons</button></div>';
+  h += '<section class="drawer" aria-label="Your spoons today"><div class="tray">'+tray+'</div>'+
+       '<div class="drawer-read"><div>'+headline+'</div>'+readRight+'</div>'+
+       '<div class="legend"><span><i class="l-free"></i>free</span><span><i class="l-plan"></i>planned</span><span><i class="l-used"></i>used</span><span><i class="l-gift"></i>given back</span></div></section>';
+
+  if(day.budget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Pick one or two things that matter. Everything else can go to tomorrow, and that still counts as a good day.</p></div>';
+
+  if(over>0){
+    const movable = day.tasks.filter(t=>!t.done && t.kind!=="gives").sort((a,b)=>b.cost-a.cost);
+    h += '<section class="over" aria-label="Over budget"><h3>That\'s '+over+' more than you\'ve got</h3>'+
+         '<p class="small">Move something to tomorrow, or add something that gives a spoon back. Keeping it all is allowed too.</p>';
+    if(movable.length){
+      h += '<ul class="over-list">'+movable.slice(0,4).map(t=>
+        '<li><span>'+esc(t.name)+' <span class="muted small">('+t.cost+')</span></span><button class="btn ghost small" data-act="tomorrow" data-id="'+t.id+'">Tomorrow</button></li>').join("")+'</ul>';
+    }
+    h += '</section>';
+  }
+
+  const todo = day.tasks.filter(t=>!t.done), done = day.tasks.filter(t=>t.done);
+  h += '<div class="section-head"><h2>Today</h2><button class="btn small" data-act="add">Add</button></div>';
+  if(!day.tasks.length) h += '<div class="empty">Nothing planned yet. Add what today needs, including the things that give energy back.</div>';
+  h += '<ul class="things">'+todo.map(taskRow).join("")+'</ul>';
+  if(done.length){
+    h += '<div class="section-head"><h3>Done</h3><span class="muted small">'+done.length+' in the jar</span></div>';
+    h += '<ul class="things">'+done.map(taskRow).join("")+'</ul>';
+  }
+  h += '<div style="margin-top:28px"><button class="btn ghost wide" data-act="close">Close the day</button></div>';
+  return h;
+}
+function taskRow(t){
+  const open = openTask===t.id;
+  let h = '<li class="thing'+(t.done?' done':'')+(t.kind==="gives"?' gives':'')+(justToggled===t.id?' just':'')+'">'+
+    '<div class="thing-row">'+
+      '<button class="check" data-act="toggle" data-id="'+t.id+'" aria-pressed="'+(!!t.done)+'" aria-label="'+(t.done?'Mark not done: ':'Mark done: ')+esc(t.name)+'">'+
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4"><path d="M3 8.5l3.2 3L13 4.5"/></svg></button>'+
+      '<span class="thing-name">'+esc(t.name)+'</span>'+pips(t)+
+      '<button class="more" data-act="more" data-id="'+t.id+'" aria-expanded="'+open+'" aria-label="Options for '+esc(t.name)+'">'+
+        '<svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="16" cy="10" r="1.8"/></svg></button>'+
+    '</div>';
+  if(open){
+    h += '<div class="thing-actions">'+
+      '<span class="stepper"><button data-act="cost-" data-id="'+t.id+'" aria-label="One spoon less">−</button><span>'+t.cost+' '+spoonWord(t.cost)+'</span><button data-act="cost+" data-id="'+t.id+'" aria-label="One spoon more">+</button></span>'+
+      (t.done?'':'<button class="btn ghost small" data-act="tomorrow" data-id="'+t.id+'">Tomorrow</button>')+
+      '<button class="btn ghost small" data-act="remove" data-id="'+t.id+'">Remove</button>'+
+    '</div>';
+  }
+  return h+'</li>';
+}
+
+function morningView(k){
+  const last = Object.keys(S.days).filter(x=>x<k).sort().pop();
+  const lastDay = last? S.days[last] : null;
+  if(pickBudget===null) pickBudget = lastDay? lastDay.budget : 6;
+  let pick = "";
+  for(let i=1;i<=MAX;i++){
+    pick += '<button data-act="pick" data-n="'+i+'" aria-pressed="'+(i<=pickBudget)+'" aria-label="'+i+' '+spoonWord(i)+'">'+spoon("free")+'</button>';
+  }
+  const leftovers = (lastDay && lastDay.auto)? lastDay.tasks.filter(t=>!t.done && t.kind!=="gives") : [];
+  const carried = S.carry;
+  let h = '<h1>Buongiorno, Andy.</h1><p class="muted" style="margin-top:6px">How many spoons have you got today? Go with your gut.</p>'+
+    '<section class="drawer" aria-label="Pick your spoons"><div class="picker">'+pick+'</div>'+
+    '<p class="picked-line"><span class="big">'+pickBudget+'</span> <span class="of">'+spoonWord(pickBudget)+'</span></p></section>';
+  if(pickBudget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Low day. That\'s fine. The drawer will help you keep it small.</p></div>';
+  if(carried.length){
+    h += '<div class="section-head"><h3>Moved to today</h3></div><div class="done-list">'+carried.map(t=>'<span>'+esc(t.name)+' ('+t.cost+')</span>').join("")+'</div>';
+  }
+  const carriedNames = new Set(carried.map(t=>t.name));
+  const wd = parseKey(k).getDay();
+  const usual = usualFor(wd, carriedNames);
+  if(usual.length){
+    const total = usual.filter(p=>!usualOff.has(p.id)).reduce((a,p)=>a+(p.kind==="gives"?0:p.cost),0);
+    h += '<div class="section-head"><h3>Usual for a '+WD_LONG[wd]+'</h3><span class="muted small">'+total+' '+spoonWord(total)+'</span></div>'+
+      '<p class="small muted" style="margin-bottom:10px">Tap to leave any out today. Change these in Settings.</p><div class="chips">'+
+      usual.map(p=>{ const on=!usualOff.has(p.id); return '<button class="chip'+(p.kind==="gives"?' gives':'')+(on?'':' off')+'" data-act="usual" data-id="'+p.id+'" aria-pressed="'+on+'">'+esc(p.name)+' <span class="n">'+(p.kind==="gives"?'+':'')+p.cost+'</span></button>'; }).join("")+'</div>';
+  }
+  const offer = leftovers.filter(t=>!carriedNames.has(t.name));
+  if(offer.length){
+    h += '<div class="section-head"><h3>Left from '+WD_LONG[parseKey(last).getDay()]+'</h3></div><p class="small muted" style="margin-bottom:10px">Tap any you still want today. The rest can go.</p><div class="chips">'+
+      offer.map(t=>{ const on=bringIds.has(last+"|"+t.id); return '<button class="chip" data-act="bring" data-id="'+t.id+'" data-from="'+last+'" aria-pressed="'+on+'">'+esc(t.name)+' <span class="n">'+t.cost+'</span></button>'; }).join("")+'</div>';
+  }
+  h += '<div style="margin-top:28px"><button class="btn wide" data-act="start">Start the day with '+pickBudget+'</button></div>';
+  return h;
+}
+let bringIds = new Set();
+let usualOff = new Set();
+let editPreset = null;
+function usualFor(wd, skipNames){ return S.presets.filter(p=>Array.isArray(p.days) && p.days.indexOf(wd)>=0 && !(skipNames && skipNames.has(p.name))); }
+
+function closedView(k, day){
+  const m = sums(day);
+  const done = day.tasks.filter(t=>t.done);
+  let h = '<h1>Buona notte, Andy.</h1><p class="kind-words">Proud of you for trying.</p>'+
+    '<p class="muted" style="margin-top:4px">'+(done.length? done.length+' '+(done.length===1?'thing':'things')+' went in the jar today.' : 'Nothing ticked off, and the day still counted. Rest is a thing you did.')+'</p>';
+  h += '<div class="day-card" style="margin-top:20px">'+dayCardInner(k, day)+'</div>';
+  if(S.carry.length) h+='<p class="small muted">'+S.carry.length+' '+(S.carry.length===1?'thing is':'things are')+' waiting for tomorrow.</p>';
+  h += '<div class="row" style="margin-top:20px;gap:10px;flex-wrap:wrap"><button class="btn ghost small" data-act="reopen">Reopen today</button>'+
+       '<button class="btn ghost small" data-act="share">Copy today\'s summary</button></div>';
+  return h;
+}
+
+/* ================= add sheet ================= */
+let addKind = "cost", addCost = 1;
+function openAdd(){
+  addKind="cost"; addCost=1;
+  showSheet(addSheet());
+}
+function addSheet(){
+  const costs = S.presets.filter(p=>p.kind!=="gives"), gives = S.presets.filter(p=>p.kind==="gives");
+  const chip = p=>'<button class="chip'+(p.kind==="gives"?' gives':'')+'" data-act="addpreset" data-id="'+p.id+'">'+esc(p.name)+' <span class="n">'+(p.kind==="gives"?'+':'')+p.cost+'</span></button>';
+  return '<div class="grab"></div><div class="row between"><h2>Add to today</h2><button class="btn small" data-act="dismiss">Done</button></div>'+
+    '<h3 style="margin:18px 0 8px">Costs spoons</h3><div class="chips">'+costs.map(chip).join("")+'</div>'+
+    '<h3 style="margin:18px 0 8px">Gives some back</h3><div class="chips">'+gives.map(chip).join("")+'</div>'+
+    '<h3 style="margin:24px 0 8px">Something else</h3>'+
+    '<form data-form="custom" class="stack">'+
+      '<input class="field" name="name" maxlength="60" placeholder="What is it?" aria-label="What is it?" autocomplete="off">'+
+      '<div class="seg" role="group" aria-label="Does it cost or give back?"><button type="button" data-act="kind" data-k="cost" aria-pressed="'+(addKind==="cost")+'">Costs spoons</button><button type="button" data-act="kind" data-k="gives" aria-pressed="'+(addKind==="gives")+'">Gives back</button></div>'+
+      '<div class="row between"><span class="stepper"><button type="button" data-act="acost-" aria-label="One spoon less">−</button><span id="acost">'+addCost+' '+spoonWord(addCost)+'</span><button type="button" data-act="acost+" aria-label="One spoon more">+</button></span>'+
+      '<label class="small row" style="gap:8px"><input type="checkbox" name="keep" checked> Save for next time</label></div>'+
+      '<button class="btn wide" type="submit">Add it</button>'+
+    '</form>';
+}
+
+/* ================= jar ================= */
+function dayCardInner(k, day){
+  const m = sums(day);
+  let tray=""; const n = Math.min(day.budget + m.giftsDone, 20);
+  const used = Math.min(m.spent, n);
+  for(let i=0;i<used;i++) tray+=spoon("used");
+  for(let i=used;i<n;i++) tray+= (i>=day.budget? spoon("gift") : spoon("free"));
+  const done = day.tasks.filter(t=>t.done);
+  return '<div class="row between"><h3>'+niceDate(k)+'</h3><span class="small muted">'+m.spent+' of '+day.budget+(m.giftsDone?' + '+m.giftsDone:'')+'</span></div>'+
+    '<div class="mini-tray" aria-hidden="true">'+tray+'</div>'+
+    (done.length? '<div class="done-list">'+done.map(t=>'<span'+(t.kind==="gives"?' class="gives"':'')+'>'+esc(t.name)+'</span>').join("")+'</div>' : '<p class="small muted">A resting day.</p>')+
+    (day.note? '<p class="day-note">'+esc(day.note)+'</p>' : '');
+}
+function jarView(){
+  const keys = Object.keys(S.days).filter(k=>S.days[k].closed).sort().reverse();
+  const total = keys.reduce((a,k)=>a+S.days[k].tasks.filter(t=>t.done).length,0);
+  let h = '<h1>The jar</h1>';
+  h += '<div class="jar-count"><span class="big">'+total+'</span><p class="muted">'+(total===1?'thing':'things')+' done across '+keys.length+' '+(keys.length===1?'day':'days')+'. Every one of them took a spoon.</p></div>';
+  if(!keys.length) return h+'<div class="empty">When you close a day, what you got done lands here.</div>';
+  return h + keys.map(k=>'<div class="day-card">'+dayCardInner(k,S.days[k])+'</div>').join("");
+}
+
+/* ================= patterns ================= */
+function patternsView(){
+  const keys = Object.keys(S.days).filter(k=>S.days[k].closed).sort();
+  let h = '<h1>Patterns</h1><p class="muted" style="margin-top:6px">What your days tend to look like. Just information, never a score.</p>';
+  const need = 5;
+  if(keys.length < need){
+    return h+'<div class="empty" style="margin-top:20px">Patterns show up after '+need+' closed days. You\'ve got '+keys.length+' so far.</div>';
+  }
+  // spoons you start with, by weekday (Mon first)
+  const order=[1,2,3,4,5,6,0]; const by={}; order.forEach(d=>by[d]=[]);
+  keys.forEach(k=>by[parseKey(k).getDay()].push(S.days[k].budget));
+  const avg = a=>a.reduce((x,y)=>x+y,0)/a.length;
+  const vals = order.map(d=>by[d].length? avg(by[d]) : null);
+  const max = Math.max(MAX/2, ...vals.filter(v=>v!==null));
+  h += '<section style="margin-top:22px"><h2>Spoons you wake up with</h2><div class="bars" role="img" aria-label="Average spoons by weekday: '+order.map((d,i)=>WD[d]+' '+(vals[i]===null?'no data':vals[i].toFixed(1))).join(", ")+'">'+
+    order.map((d,i)=>{ const v=vals[i];
+      return '<div class="bar"><span class="v">'+(v===null?'':(Math.round(v*10)/10))+'</span>'+
+        (v===null? '<div class="fill none"></div>' : '<div class="fill" style="height:'+Math.max(6,(v/max)*100)+'px"></div>')+
+        '<span class="d">'+WD[d]+'</span></div>'; }).join("")+'</div>';
+  const known = order.map((d,i)=>({d,v:vals[i]})).filter(x=>x.v!==null);
+  if(known.length>=3){
+    const lo = known.reduce((a,b)=>b.v<a.v?b:a), hi = known.reduce((a,b)=>b.v>a.v?b:a);
+    if(hi.v-lo.v>=1) h += '<p class="small muted" style="margin-top:10px">'+WD_LONG[lo.d]+'s start lowest, '+WD_LONG[hi.d]+'s highest.</p>';
+  }
+  h += '</section>';
+
+  const insights = [];
+  // which things show up on days that ran over
+  const stat = {};
+  keys.forEach(k=>{ const d=S.days[k]; const m=sums(d); const overBy = (typeof d.overBy==="number")? d.overBy : m.planned - m.have;
+    const names = new Set(d.tasks.map(t=>t.name));
+    names.forEach(n=>{ stat[n]=stat[n]||{days:0,over:0}; stat[n].days++; if(overBy>0) stat[n].over++; }); });
+  const heavy = Object.entries(stat).filter(([n,s])=>s.days>=3 && s.over/s.days>=0.5)
+    .sort((a,b)=>b[1].over/b[1].days - a[1].over/a[1].days).slice(0,2);
+  heavy.forEach(([n,s])=>insights.push('<p><strong>'+esc(n)+'</strong> was on '+s.over+' of the '+s.days+' days that ran over.</p><p class="small muted">It might cost more than the number you gave it. Try bumping it up.</p>'));
+
+  // gives-back days vs not
+  const withG=[], withoutG=[];
+  keys.forEach(k=>{ const d=S.days[k]; const m=sums(d); const left = m.have - m.spent; (m.giftsDone>0?withG:withoutG).push(left); });
+  if(withG.length>=2 && withoutG.length>=2){
+    const a=avg(withG), b=avg(withoutG);
+    if(Math.abs(a-b)>=0.5) insights.push('<p>On days you did something that gives back, you finished with <strong>'+(Math.round(a*10)/10)+'</strong> spoons left, against <strong>'+(Math.round(b*10)/10)+'</strong> on days you didn\'t.</p>');
+  }
+  // most used refills
+  const g={}; keys.forEach(k=>S.days[k].tasks.forEach(t=>{ if(t.kind==="gives"&&t.done) g[t.name]=(g[t.name]||0)+1; }));
+  const topG = Object.entries(g).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  if(topG.length) insights.push('<p>What you reach for most to refill: '+topG.map(([n,c])=>'<strong>'+esc(n)+'</strong> ('+c+')').join(", ")+'.</p>');
+  // low days
+  const low = keys.filter(k=>S.days[k].budget<=3).length;
+  if(low) insights.push('<p>'+low+' of your '+keys.length+' days '+(low===1?'was a low-spoon day':'were low-spoon days')+'. You still closed every one of them.</p>');
+
+  h += '<section style="margin-top:28px"><h2 style="margin-bottom:12px">Things worth knowing</h2>'+
+       (insights.length? insights.map(x=>'<div class="insight">'+x+'</div>').join("") : '<div class="empty">Nothing stands out yet. More days will tell.</div>')+'</section>';
+  return h;
+}
+
+/* ================= settings ================= */
+function settingsView(){
+  const th = S.theme||"auto";
+  let h = '<h1>Settings</h1>';
+  h += '<section style="margin-top:22px"><h2>Appearance</h2><p class="small muted" style="margin:4px 0 10px">Auto follows your phone, so late nights go dark on their own.</p>'+
+       '<div class="seg" role="group" aria-label="Appearance">'+["auto","light","dark"].map(v=>'<button type="button" data-act="theme" data-v="'+v+'" aria-pressed="'+(th===v)+'">'+v.charAt(0).toUpperCase()+v.slice(1)+'</button>').join("")+'</div></section>';
+  h += '<section style="margin-top:22px"><h2>The note</h2><div class="note" style="margin-top:16px">'+noteHtml(S.note)+'</div>'+
+       '<button class="link" data-act="editnote" style="margin-top:10px">Edit the note</button></section>';
+  h += '<section style="margin-top:28px"><h2>Your usual things</h2><p class="small muted" style="margin:4px 0 8px">These show up when you tap Add. Tap one to rename it, change what it costs, or pick the days it\'s suggested in the morning.</p>';
+  const DAYS_ORDER=[1,2,3,4,5,6,0];
+  h += S.presets.map(p=>{
+    const open = editPreset===p.id;
+    const daysTxt = p.days && p.days.length? DAYS_ORDER.filter(d=>p.days.indexOf(d)>=0).map(d=>WD[d]).join(", ") : "";
+    let r = '<div class="preset">'+
+      '<button class="preset-row" data-act="pedit" data-id="'+p.id+'" aria-expanded="'+open+'">'+
+        '<span class="nm">'+esc(p.name)+(daysTxt?'<br><span class="small muted">'+daysTxt+'</span>':'')+'</span>'+
+        '<span class="tag'+(p.kind==="gives"?' gives':'')+'">'+(p.kind==="gives"?'+':'')+p.cost+'</span></button>';
+    if(open){
+      r += '<div class="stack preset-edit">'+
+        '<input class="field" data-act="pname" data-id="'+p.id+'" value="'+esc(p.name)+'" maxlength="60" aria-label="Name">'+
+        '<div class="seg" role="group" aria-label="Costs or gives back"><button type="button" data-act="pkind" data-id="'+p.id+'" data-k="cost" aria-pressed="'+(p.kind!=="gives")+'">Costs spoons</button><button type="button" data-act="pkind" data-id="'+p.id+'" data-k="gives" aria-pressed="'+(p.kind==="gives")+'">Gives back</button></div>'+
+        '<span class="stepper"><button data-act="pcost-" data-id="'+p.id+'" aria-label="One spoon less">−</button><span>'+p.cost+' '+spoonWord(p.cost)+'</span><button data-act="pcost+" data-id="'+p.id+'" aria-label="One spoon more">+</button></span>'+
+        '<div><label class="lbl">Suggest it on</label><div class="chips">'+DAYS_ORDER.map(d=>{ const on=p.days.indexOf(d)>=0;
+          return '<button class="chip" data-act="pday" data-id="'+p.id+'" data-d="'+d+'" aria-pressed="'+on+'">'+WD[d]+'</button>'; }).join("")+'</div></div>'+
+        '<div class="row between"><button class="link" data-act="pdel" data-id="'+p.id+'">Remove it</button><button class="btn small" data-act="pedit" data-id="'+p.id+'">Done</button></div>'+
+      '</div>';
+    }
+    return r+'</div>';
+  }).join("");
+  h += '<div style="margin-top:14px"><button class="btn ghost small" data-act="pnew">Add a usual thing</button></div></section>';
+  h += '<section style="margin-top:28px" class="stack"><h2>Your data</h2><p class="small muted">Everything stays on this phone. Nothing is sent anywhere. Save a backup if you change phones.</p>'+
+       '<div class="row" style="flex-wrap:wrap"><button class="btn ghost small" data-act="export">Save a backup</button>'+
+       '<label class="btn ghost small" style="cursor:pointer">Restore a backup<input type="file" accept="application/json,.json" data-act="import" class="hidden"></label></div>'+
+       '<button class="link" data-act="wipe">Erase everything</button></section>';
+  const daysKept = Object.keys(S.days).length;
+  h += '<footer class="about"><p><strong style="color:var(--ink)">Spoons</strong> '+VERSION+'</p>'+
+       '<dl><dt>Accounts</dt><dd>None</dd><dt>Tracking</dt><dd>None. No analytics, no network calls.</dd>'+
+       '<dt>Storage</dt><dd>localStorage on this device, '+daysKept+' '+(daysKept===1?'day':'days')+' kept</dd>'+
+       '<dt>Offline</dt><dd>Yes, once it\'s on your home screen</dd>'+
+       '<dt>Type</dt><dd>Bricolage Grotesque and Fraunces, both SIL OFL</dd>'+
+       '<dt>Stack</dt><dd>One HTML file, vanilla JS, no build step</dd></dl></footer>';
+  return h;
+}
+
+/* ================= sheet plumbing ================= */
+let lastFocus=null;
+let sheetGen=0;
+function showSheet(html){
+  sheetGen++;
+  lastFocus=document.activeElement;
+  $layer.innerHTML = '<div class="scrim" data-act="dismiss"></div><div class="sheet" role="dialog" aria-modal="true">'+html+'</div>';
+  const sh=$layer.querySelector(".sheet"); const h=sh.querySelector("h2"); if(h){ h.id="sheet-title"; sh.setAttribute("aria-labelledby","sheet-title"); }
+  const first=sh.querySelector(".sheet button:not(.grab), .sheet input, .sheet textarea"); if(first) first.focus({preventScroll:true});
+  enableSwipe(sh);
+}
+function closeSheet(silent){
+  $layer.onclick=null;
+  const sh=$layer.querySelector(".sheet"); if(!sh) { $layer.innerHTML=""; return; }
+  const gen=++sheetGen;
+  sh.classList.add("out"); const sc=$layer.querySelector(".scrim"); if(sc) sc.classList.add("out");
+  setTimeout(()=>{ if(gen===sheetGen) $layer.innerHTML=""; }, 220);
+  if(!silent && lastFocus && lastFocus.focus) lastFocus.focus();
+}
+// drag the sheet down to dismiss it, like a native sheet
+function enableSwipe(sh){
+  let y0=null, dy=0, t0=0;
+  sh.addEventListener("touchstart", e=>{ if(sh.scrollTop>0 && !e.target.closest(".grab")) return; y0=e.touches[0].clientY; dy=0; t0=Date.now(); sh.style.transition="none"; }, {passive:true});
+  sh.addEventListener("touchmove", e=>{ if(y0===null) return; dy=Math.max(0,e.touches[0].clientY-y0); if(dy>0){ sh.style.transform="translateY("+dy+"px)"; } }, {passive:true});
+  sh.addEventListener("touchend", ()=>{ if(y0===null) return; const v=dy/Math.max(1,Date.now()-t0); sh.style.transition="";
+    if(dy>110 || v>0.6){ closeSheet(); } else { sh.style.transform=""; } y0=null; });
+}
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeSheet(); });
+
+/* ================= actions ================= */
+function today(){ return S.days[todayKey()]; }
+function findTask(id){ const d=today(); return d && d.tasks.find(t=>t.id===id); }
+
+function handle(act, el, e){
+  const id = el.dataset.id;
+  switch(act){
+    case "welcome": S.welcomed=true; save(); render(); break;
+    case "pick": pickBudget = +el.dataset.n; buzz(5); render(); break;
+    case "bring": {
+      const on = el.getAttribute("aria-pressed")!=="true";
+      el.setAttribute("aria-pressed", on); buzz(6);
+      if(on) bringIds.add(el.dataset.from+"|"+id); else bringIds.delete(el.dataset.from+"|"+id);
+      break;
+    }
+    case "start": {
+      const k=todayKey();
+      const tasks = S.carry.map(t=>({id:uid(),name:t.name,cost:t.cost,kind:t.kind||"cost",done:false}));
+      const have = new Set(tasks.map(t=>t.name));
+      usualFor(parseKey(k).getDay(), have).forEach(p=>{ if(!usualOff.has(p.id)) tasks.push({id:uid(),name:p.name,cost:p.cost,kind:p.kind,done:false}); });
+      bringIds.forEach(ref=>{ const [from,tid]=ref.split("|"); const src=S.days[from] && S.days[from].tasks.find(t=>t.id===tid);
+        if(src) tasks.push({id:uid(),name:src.name,cost:src.cost,kind:src.kind,done:false}); });
+      S.days[k] = {budget:pickBudget, tasks, closed:false};
+      S.carry=[]; bringIds=new Set(); usualOff=new Set(); pickBudget=null; buzz(12); save(); render(); break;
+    }
+    case "usual": if(usualOff.has(id)) usualOff.delete(id); else usualOff.add(id); render(); break;
+    case "pedit": editPreset = editPreset===id? null : id; render(); break;
+    case "pnew": { const p={id:uid(),name:"New thing",cost:1,kind:"cost",days:[]}; S.presets.push(p); editPreset=p.id; save(); render();
+      const inp=document.querySelector('[data-act="pname"][data-id="'+p.id+'"]'); if(inp){ inp.focus(); inp.select(); } break; }
+    case "theme": S.theme=el.dataset.v; save(); applyTheme(); render(); break;
+    case "pkind": { const p=S.presets.find(x=>x.id===id); if(!p) break; p.kind=el.dataset.k; save(); render(); break; }
+    case "pday": { const p=S.presets.find(x=>x.id===id); if(!p) break; const d=+el.dataset.d; const i=p.days.indexOf(d);
+      if(i>=0) p.days.splice(i,1); else p.days.push(d); save(); render(); break; }
+    case "rebudget": {
+      const d=today();
+      let b = d.budget;
+      const body = ()=>{ let p=""; for(let i=1;i<=MAX;i++) p+='<button data-act="rb" data-n="'+i+'" aria-pressed="'+(i<=b)+'" aria-label="'+i+' '+spoonWord(i)+'">'+spoon("free")+'</button>';
+        return '<div class="grab"></div><h2>How many have you actually got?</h2><p class="small muted" style="margin-top:4px">Days change. Adjust it as often as you need.</p>'+
+          '<section class="drawer"><div class="picker">'+p+'</div><p class="picked-line"><span class="big">'+b+'</span> <span class="of">'+spoonWord(b)+'</span></p></section>'+
+          '<button class="btn wide" data-act="rbsave" data-n="'+b+'">Use '+b+'</button>'; };
+      showSheet(body());
+      $layer.onclick = ev=>{ const t=ev.target.closest("[data-act]"); if(!t) return;
+        if(t.dataset.act==="rb"){ b=+t.dataset.n; $layer.querySelector(".sheet").innerHTML=body(); }
+        else if(t.dataset.act==="rbsave"){ d.budget=b; save(); $layer.onclick=null; closeSheet(true); render(); }
+        else if(t.dataset.act==="dismiss"){ $layer.onclick=null; closeSheet(); } };
+      break;
+    }
+    case "add": openAdd(); break;
+    case "toggle": { const t=findTask(id); if(!t) break; t.done=!t.done; t.doneAt=t.done?Date.now():null; justToggled=t.id; buzz(t.done?[6,40,10]:6); save(); render();
+      if(t.done && t.kind==="gives") toast("+"+t.cost+" "+spoonWord(t.cost)+" back"); break; }
+    case "more": openTask = openTask===id? null : id; render(); break;
+    case "cost-": case "cost+": { const t=findTask(id); if(!t) break; t.cost=Math.max(1,Math.min(6,t.cost+(act==="cost+"?1:-1))); save(); render(); break; }
+    case "tomorrow": { const d=today(); const i=d.tasks.findIndex(t=>t.id===id); if(i<0) break;
+      const [t]=d.tasks.splice(i,1); S.carry.push({name:t.name,cost:t.cost,kind:t.kind}); openTask=null; save(); render();
+      toast("Moved to tomorrow","Undo",()=>{ S.carry.pop(); d.tasks.splice(i,0,t); save(); render(); }); break; }
+    case "remove": { const d=today(); const i=d.tasks.findIndex(t=>t.id===id); if(i<0) break;
+      const [t]=d.tasks.splice(i,1); openTask=null; save(); render();
+      toast("Removed","Undo",()=>{ d.tasks.splice(i,0,t); save(); render(); }); break; }
+    case "close": {
+      const d=today(); const left=d.tasks.filter(t=>!t.done);
+      showSheet('<div class="grab"></div><h2>Close the day</h2>'+
+        (left.length? '<p class="small muted" style="margin:6px 0 10px">These didn\'t happen. Untick any you\'d rather let go of.</p>'+
+          left.map(t=>'<label class="preset-row" style="gap:12px"><input type="checkbox" name="carry" value="'+t.id+'" '+(t.kind==="gives"?'':'checked')+' style="width:22px;height:22px"> <span class="nm">'+esc(t.name)+'</span><span class="small muted">to tomorrow</span></label>').join("") : '')+
+        '<form data-form="close" class="stack" style="margin-top:16px"><label class="lbl" for="dn">Anything worth remembering about today? (optional)</label>'+
+        '<textarea class="field" id="dn" name="note" maxlength="280" placeholder="Luca said something hilarious at dinner…"></textarea>'+
+        '<button class="btn wide" type="submit">Close the day</button></form>');
+      break;
+    }
+    case "reopen": { const d=today(); d.closed=false;
+      // pull back anything carried from today so it isn't doubled up
+      if(d.carriedOut){ S.carry = S.carry.slice(0, Math.max(0,S.carry.length-d.carriedOut)); d.tasks = d.tasks.concat(d.removedOnClose||[]); d.carriedOut=0; d.removedOnClose=[]; }
+      save(); render(); break; }
+    case "share": {
+      const k=todayKey(), d=today(), m=sums(d), done=d.tasks.filter(t=>t.done).map(t=>t.name);
+      const text = WD_LONG[parseKey(k).getDay()]+": started with "+d.budget+" "+spoonWord(d.budget)+", used "+m.spent+(m.giftsDone?", got "+m.giftsDone+" back":"")+"."+(done.length?"\nDone: "+done.join(", ")+".":"")+(d.note?"\n"+d.note:"");
+      if(navigator.share){ navigator.share({text}).catch(()=>{}); }
+      else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>toast("Copied"),()=>toast("Couldn't copy here")); }
+      else toast("Copy isn't available in this browser");
+      break;
+    }
+    case "kind": addKind=el.dataset.k; el.parentNode.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", b===el)); break;
+    case "acost-": case "acost+": addCost=Math.max(1,Math.min(6,addCost+(act==="acost+"?1:-1))); document.getElementById("acost").textContent=addCost+" "+spoonWord(addCost); break;
+    case "addpreset": { const p=S.presets.find(x=>x.id===id); if(!p) break;
+      today().tasks.push({id:uid(),name:p.name,cost:p.cost,kind:p.kind,done:false}); save();
+      buzz(6); el.classList.remove("added"); void el.offsetWidth; el.classList.add("added"); toast("Added "+p.name); render(); break; }
+    case "dismiss": closeSheet(); break;
+    case "editnote":
+      showSheet('<div class="grab"></div><h2>Edit the note</h2><form data-form="note" class="stack" style="margin-top:12px"><textarea class="field" name="note" style="min-height:260px">'+esc(S.note)+'</textarea><button class="btn wide" type="submit">Save the note</button></form>');
+      break;
+    case "pcost-": case "pcost+": { const p=S.presets.find(x=>x.id===id); if(!p) break; p.cost=Math.max(1,Math.min(6,p.cost+(act==="pcost+"?1:-1))); save(); render(); break; }
+    case "pdel": { const i=S.presets.findIndex(x=>x.id===id); if(i<0) break; const [p]=S.presets.splice(i,1); save(); render();
+      toast("Removed "+p.name,"Undo",()=>{ S.presets.splice(i,0,p); save(); render(); }); break; }
+    case "export": {
+      const blob=new Blob([JSON.stringify(S,null,1)],{type:"application/json"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="spoons-backup-"+todayKey()+".json";
+      document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500); toast("Backup saved"); break;
+    }
+    case "wipe":
+      showSheet('<div class="grab"></div><h2>Erase everything?</h2><p class="muted" style="margin:8px 0 18px">Every day, the jar, your usual things and the note. This can\'t be undone, so save a backup first if you might want it.</p>'+
+        '<button class="btn wide danger" data-act="wipeyes">Erase everything</button><div style="height:10px"></div><button class="btn ghost wide" data-act="dismiss">Keep it</button>');
+      break;
+    case "wipeyes": S=fresh(); save(); view="today"; closeSheet(true); render(); break;
+  }
+}
+
+document.addEventListener("click", e=>{
+  if($layer.onclick && $layer.contains(e.target)) return; // sheet has its own handler
+  const el=e.target.closest("[data-act]"); if(!el || el.tagName==="INPUT") return;
+  handle(el.dataset.act, el, e);
+});
+document.addEventListener("change", e=>{
+  const el=e.target;
+  if(el.dataset && el.dataset.act==="pname"){
+    const p=S.presets.find(x=>x.id===el.dataset.id); const v=el.value.trim();
+    if(p && v){ const old=p.name; p.name=v; save(); if(old!==v) toast("Renamed to "+v); } else if(p){ el.value=p.name; }
+    return;
+  }
+  if(el.dataset && el.dataset.act==="import" && el.files && el.files[0]){
+    const r=new FileReader();
+    r.onload=()=>{ try{ const s=JSON.parse(r.result); if(!s||!s.days||!Array.isArray(s.presets)) throw 0; S=s; save(); render(); toast("Backup restored"); }
+      catch(_){ toast("That file isn't a Spoons backup"); } };
+    r.readAsText(el.files[0]);
+  }
+});
+document.addEventListener("submit", e=>{
+  const f=e.target; if(!f.dataset.form) return; e.preventDefault();
+  if(f.dataset.form==="custom"){
+    const name=(f.name.value||"").trim(); if(!name){ f.name.focus(); toast("Give it a name first"); return; }
+    today().tasks.push({id:uid(),name,cost:addCost,kind:addKind,done:false});
+    if(f.keep.checked && !S.presets.some(p=>p.name.toLowerCase()===name.toLowerCase())) S.presets.push({id:uid(),name,cost:addCost,kind:addKind});
+    save(); closeSheet(true); render(); toast("Added "+name);
+  }
+  if(f.dataset.form==="close"){
+    const d=today();
+    const keep = new Set([...document.querySelectorAll('input[name="carry"]:checked')].map(i=>i.value));
+    const left = d.tasks.filter(t=>!t.done);
+    const mm = sums(d); d.overBy = mm.planned - mm.have;
+    const carried = left.filter(t=>keep.has(t.id));
+    carried.forEach(t=>S.carry.push({name:t.name,cost:t.cost,kind:t.kind}));
+    d.carriedOut = carried.length;
+    d.removedOnClose = carried;           // so "Reopen" can put them back
+    d.tasks = d.tasks.filter(t=>!keep.has(t.id));
+    d.note = (f.note.value||"").trim();
+    d.closed = true; save(); closeSheet(true); render();
+  }
+  if(f.dataset.form==="note"){
+    S.note = f.note.value.trim() || DEFAULT_NOTE; save(); closeSheet(true); render(); toast("Note saved");
+  }
+});
+
+// re-check the date when the app comes back into view (it may be a new day)
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && !$layer.innerHTML) render(); });
+
+render();
+
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+}
+window.__spoons = { get state(){return S;}, set state(v){S=v;save();render();}, render, todayKey };
+})();
+</script>
+</body>
+</html>
