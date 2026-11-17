@@ -236,6 +236,8 @@ input[type=checkbox]{accent-color:var(--ink)}
 .hint{background:var(--surface);border-radius:var(--radius-md);padding:12px 8px 14px 16px;margin-top:14px;box-shadow:inset 0 0 0 1.5px var(--line)}
 .hint p{padding-right:8px;margin-top:2px}
 
+.one-thing{text-align:center;margin-top:10px}
+
 /* ---------- jar ---------- */
 .day-card{background:var(--surface);border-radius:var(--radius-md);padding:14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line)}
 .day-card .row{margin-bottom:8px}
@@ -346,13 +348,14 @@ const DEFAULT_PRESETS = [
   ["Washing",1,"cost"],["Shower",1,"cost"],["Catch-up with people",3,"cost"],
   ["Coffee",1,"gives"],["Big glass of water",1,"gives"],["Pre-dinner nap",2,"gives"],
   ["Playtime with Luca",1,"gives"],["Cafe after swim",1,"gives",[0]],["A Switch game",1,"gives"],
-  ["Walk outside",1,"gives"],["Maccas",1,"gives"]
+  ["Walk outside",1,"gives"],["Maccas",1,"gives"],
+  ["Tinker on a side project",1,"gives"],["Music on",1,"gives"],["Sun on your face",1,"gives"]
 ];
 function defaultPresets(){ return DEFAULT_PRESETS.map(([name,cost,kind,days])=>({id:uid(),name,cost,kind,days:(days||[]).slice()})); }
 
 function uid(){ return Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
 function fresh(){
-  return { v:3, welcomed:false, note:DEFAULT_NOTE, presets: defaultPresets(), days:{}, carry:[] };
+  return { v:4, welcomed:false, note:DEFAULT_NOTE, presets: defaultPresets(), days:{}, carry:[] };
 }
 function load(){
   try{
@@ -372,6 +375,10 @@ function load(){
       s.presets.forEach(p=>{ if(p.name==="Swimming lesson"){ p.name="Luca's swimming"; } if((p.name==="Luca's swimming"||p.name==="Cafe after swim") && p.days.indexOf(0)<0) p.days.push(0); });
       if(!s.presets.some(p=>p.name==="Pick up Nonna")) s.presets.splice(Math.max(0,s.presets.findIndex(p=>p.name==="Luca's swimming")),0,{id:uid(),name:"Pick up Nonna",cost:1,kind:"cost",days:[0]});
       s.v=3;
+    }
+    if(s.v<4){ // small sparks
+      [["Tinker on a side project",1],["Music on",1],["Sun on your face",1]].forEach(([n,c])=>{ if(!s.presets.some(p=>p.name===n)) s.presets.push({id:uid(),name:n,cost:c,kind:"gives",days:[]}); });
+      s.v=4;
     }
     return s;
   }catch(e){ return fresh(); }
@@ -522,7 +529,8 @@ function todayView(){
        '<div class="legend"><span><i class="l-free"></i>free</span><span><i class="l-plan"></i>planned</span><span><i class="l-used"></i>used</span><span><i class="l-gift"></i>given back</span></div></section>';
 
   h += installHint();
-  if(day.budget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Pick one or two things that matter. Everything else can go to tomorrow, and that still counts as a good day.</p></div>';
+  if(day.oneThing) h += '<div class="flat"><h3>Just one thing today.</h3><p class="small muted">That\'s the whole plan. If you get to more, lovely. If you don\'t, the day still counts.</p></div>';
+  else if(day.budget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Pick one or two things that matter. Everything else can go to tomorrow, and that still counts as a good day.</p></div>';
 
   if(over>0){
     const movable = day.tasks.filter(t=>!t.done && t.kind!=="gives").sort((a,b)=>b.cost-a.cost);
@@ -587,7 +595,10 @@ function morningView(k){
   }
   const leftovers = (lastDay && lastDay.auto)? lastDay.tasks.filter(t=>!t.done && t.kind!=="gives") : [];
   const carried = S.carry;
-  let h = '<h1>Buongiorno, Andy.</h1><p class="muted" style="margin-top:6px">How many spoons have you got today? Go with your gut.</p>'+
+  const gap = last? Math.round((parseKey(k)-parseKey(last))/864e5) : 0;
+  const lead = gap>=3? 'Welcome back. No catching up needed, today\'s a fresh drawer. How many spoons have you got?'
+                     : 'How many spoons have you got today? Go with your gut.';
+  let h = '<h1>Buongiorno, Andy.</h1><p class="muted" style="margin-top:6px">'+lead+'</p>'+
     '<section class="drawer" aria-label="Pick your spoons"><div class="picker">'+pick+'</div>'+
     '<p class="picked-line"><span class="big">'+pickBudget+'</span> <span class="of">'+spoonWord(pickBudget)+'</span></p></section>';
   if(pickBudget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Low day. That\'s fine. The drawer will help you keep it small.</p></div>';
@@ -608,7 +619,8 @@ function morningView(k){
     h += '<div class="section-head"><h3>Left from '+WD_LONG[parseKey(last).getDay()]+'</h3></div><p class="small muted" style="margin-bottom:10px">Tap any you still want today. The rest can go.</p><div class="chips">'+
       offer.map(t=>{ const on=bringIds.has(last+"|"+t.id); return '<button class="chip" data-act="bring" data-id="'+t.id+'" data-from="'+last+'" aria-pressed="'+on+'">'+esc(t.name)+' <span class="n">'+t.cost+'</span></button>'; }).join("")+'</div>';
   }
-  h += '<div style="margin-top:28px"><button class="btn wide" data-act="start">Start the day with '+pickBudget+'</button></div>';
+  h += '<div style="margin-top:28px"><button class="btn wide" data-act="start">Start the day with '+pickBudget+'</button></div>'+
+       '<div class="one-thing"><button class="link" data-act="onething">Not up to choosing? Just pick one thing.</button></div>';
   return h;
 }
 let bringIds = new Set();
@@ -670,9 +682,11 @@ function openAdd(){
 function addSheet(){
   const costs = S.presets.filter(p=>p.kind!=="gives"), gives = S.presets.filter(p=>p.kind==="gives");
   const chip = p=>'<button class="chip'+(p.kind==="gives"?' gives':'')+'" data-act="addpreset" data-id="'+p.id+'">'+esc(p.name)+' <span class="n">'+(p.kind==="gives"?'+':'')+p.cost+'</span></button>';
-  return '<div class="grab"></div><div class="row between"><h2>Add to today</h2><button class="btn small" data-act="dismiss">Done</button></div>'+
-    '<h3 style="margin:18px 0 8px">Costs spoons</h3><div class="chips">'+costs.map(chip).join("")+'</div>'+
-    '<h3 style="margin:18px 0 8px">Gives some back</h3><div class="chips">'+gives.map(chip).join("")+'</div>'+
+  const one = today() && today().oneThing && !today().tasks.length;
+  const costH = '<h3 style="margin:18px 0 8px">Costs spoons</h3><div class="chips">'+costs.map(chip).join("")+'</div>';
+  const giveH = '<h3 style="margin:18px 0 8px">Gives some back</h3><div class="chips">'+gives.map(chip).join("")+'</div>';
+  return '<div class="grab"></div><div class="row between"><h2>'+(one?'Pick one thing':'Add to today')+'</h2><button class="btn small" data-act="dismiss">Done</button></div>'+
+    (one? giveH+costH : costH+giveH)+
     '<h3 style="margin:24px 0 8px">Something else</h3>'+
     '<form data-form="custom" class="stack">'+
       '<input class="field" name="name" maxlength="60" placeholder="What is it?" aria-label="What is it?" autocomplete="off">'+
@@ -860,6 +874,11 @@ function handle(act, el, e){
       S.days[k] = {budget:pickBudget, tasks, closed:false};
       S.carry=[]; bringIds=new Set(); usualOff=new Set(); pickBudget=null; buzz(12); save(); render(); break;
     }
+    case "onething": {
+      // a tiny day: two spoons, nothing pre-planned; anything moved from yesterday waits quietly for tomorrow
+      S.days[todayKey()] = {budget:2, tasks:[], closed:false, oneThing:true};
+      bringIds=new Set(); usualOff=new Set(); pickBudget=null; buzz(8); save(); render(); openAdd(); break;
+    }
     case "usual": if(usualOff.has(id)) usualOff.delete(id); else usualOff.add(id); render(); break;
     case "pedit": editPreset = editPreset===id? null : id; render(); break;
     case "pnew": { const p={id:uid(),name:"New thing",cost:1,kind:"cost",days:[]}; S.presets.push(p); editPreset=p.id; save(); render();
@@ -920,7 +939,9 @@ function handle(act, el, e){
     case "acost-": case "acost+": addCost=Math.max(1,Math.min(6,addCost+(act==="acost+"?1:-1))); document.getElementById("acost").textContent=addCost+" "+spoonWord(addCost); break;
     case "addpreset": { const p=S.presets.find(x=>x.id===id); if(!p) break;
       today().tasks.push({id:uid(),name:p.name,cost:p.cost,kind:p.kind,done:false}); save();
-      buzz(6); el.classList.remove("added"); void el.offsetWidth; el.classList.add("added"); toast("Added "+p.name); render(); break; }
+      buzz(6); el.classList.remove("added"); void el.offsetWidth; el.classList.add("added"); toast("Added "+p.name); render();
+      if(today().oneThing && today().tasks.length===1) closeSheet(true);
+      break; }
     case "dismiss": closeSheet(); break;
     case "editnote":
       showSheet('<div class="grab"></div><h2>Edit the note</h2><form data-form="note" class="stack" style="margin-top:12px"><textarea class="field" name="note" style="min-height:260px">'+esc(S.note)+'</textarea><button class="btn wide" type="submit">Save the note</button></form>');
