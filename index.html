@@ -237,6 +237,7 @@ input[type=checkbox]{accent-color:var(--ink)}
 .hint p{padding-right:8px;margin-top:2px}
 
 .one-thing{text-align:center;margin-top:10px}
+.quiet{display:inline-block;margin-top:10px;color:var(--ink);font-family:var(--serif);font-size:16px;text-decoration:underline;text-decoration-color:var(--honey);text-decoration-thickness:1.5px;text-underline-offset:4px}
 
 /* ---------- jar ---------- */
 .day-card{background:var(--surface);border-radius:var(--radius-md);padding:14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line)}
@@ -331,6 +332,8 @@ nav.tabs button[aria-current="page"]::after{content:"";width:4px;height:4px;bord
 
 /* ================= data ================= */
 const KEY = "spoons.v1";
+const QUIET_ROOM = "https://dreamdreams77.github.io/Quiet-Room/";
+function quietLink(){ return '<a class="quiet" href="'+QUIET_ROOM+'" target="_blank" rel="noopener">If it\'s a lot today, the quiet room is there.</a>'; }
 const VERSION = "1.0";
 const MAX = 12;
 const DAY_ROLLS_AT = 4; // a day runs 4am to 4am, so late nights still count as "today"
@@ -529,8 +532,8 @@ function todayView(){
        '<div class="legend"><span><i class="l-free"></i>free</span><span><i class="l-plan"></i>planned</span><span><i class="l-used"></i>used</span><span><i class="l-gift"></i>given back</span></div></section>';
 
   h += installHint();
-  if(day.oneThing) h += '<div class="flat"><h3>Just one thing today.</h3><p class="small muted">That\'s the whole plan. If you get to more, lovely. If you don\'t, the day still counts.</p></div>';
-  else if(day.budget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Pick one or two things that matter. Everything else can go to tomorrow, and that still counts as a good day.</p></div>';
+  if(day.oneThing) h += '<div class="flat"><h3>Just one thing today.</h3><p class="small muted">That\'s the whole plan. If you get to more, lovely. If you don\'t, the day still counts.</p>'+quietLink()+'</div>';
+  else if(day.budget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Pick one or two things that matter. Everything else can go to tomorrow, and that still counts as a good day.</p>'+quietLink()+'</div>';
 
   if(over>0){
     const movable = day.tasks.filter(t=>!t.done && t.kind!=="gives").sort((a,b)=>b.cost-a.cost);
@@ -601,7 +604,7 @@ function morningView(k){
   let h = '<h1>Buongiorno, Andy.</h1><p class="muted" style="margin-top:6px">'+lead+'</p>'+
     '<section class="drawer" aria-label="Pick your spoons"><div class="picker">'+pick+'</div>'+
     '<p class="picked-line"><span class="big">'+pickBudget+'</span> <span class="of">'+spoonWord(pickBudget)+'</span></p></section>';
-  if(pickBudget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Low day. That\'s fine. The drawer will help you keep it small.</p></div>';
+  if(pickBudget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Low day. That\'s fine. The drawer will help you keep it small.</p>'+quietLink()+'</div>';
   if(carried.length){
     h += '<div class="section-head"><h3>Moved to today</h3></div><div class="done-list">'+carried.map(t=>'<span>'+esc(t.name)+' ('+t.cost+')</span>').join("")+'</div>';
   }
