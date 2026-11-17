@@ -226,6 +226,16 @@ input[type=checkbox]{accent-color:var(--ink)}
 .serif{font-family:var(--serif);font-variation-settings:"opsz" 36}
 .kind-words{font-family:var(--serif);font-size:23px;font-weight:500;letter-spacing:-.01em;margin-top:10px;font-variation-settings:"opsz" 48}
 
+/* ---------- week, milestones, hints ---------- */
+.week{background:var(--surface);border-radius:var(--radius-md);padding:16px;box-shadow:0 1px 0 var(--line)}
+.week-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.week-grid>div{display:flex;flex-direction:column;gap:4px}
+.week-grid .big{font-size:38px;color:var(--ink)}
+.big.honey{color:var(--honey)}
+.milestone{margin-top:14px;display:inline-block;background:var(--honey-soft);color:var(--honey-ink);border-radius:999px;padding:6px 14px;font-size:15px;font-weight:600;animation:viewIn .5s var(--ease) .2s both}
+.hint{background:var(--surface);border-radius:var(--radius-md);padding:12px 8px 14px 16px;margin-top:14px;box-shadow:inset 0 0 0 1.5px var(--line)}
+.hint p{padding-right:8px;margin-top:2px}
+
 /* ---------- jar ---------- */
 .day-card{background:var(--surface);border-radius:var(--radius-md);padding:14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line)}
 .day-card .row{margin-bottom:8px}
@@ -511,6 +521,7 @@ function todayView(){
        '<div class="drawer-read"><div>'+headline+'</div>'+readRight+'</div>'+
        '<div class="legend"><span><i class="l-free"></i>free</span><span><i class="l-plan"></i>planned</span><span><i class="l-used"></i>used</span><span><i class="l-gift"></i>given back</span></div></section>';
 
+  h += installHint();
   if(day.budget<=3) h += '<div class="flat"><h3>Just keep swimming.</h3><p class="small muted">Pick one or two things that matter. Everything else can go to tomorrow, and that still counts as a good day.</p></div>';
 
   if(over>0){
@@ -534,6 +545,17 @@ function todayView(){
   }
   h += '<div style="margin-top:28px"><button class="btn ghost wide" data-act="close">Close the day</button></div>';
   return h;
+}
+function installHint(){
+  if(S.hideInstall) return "";
+  const standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone;
+  if(standalone || !/^https?:/.test(location.protocol)) return "";
+  let framed=false; try{ framed = window.self!==window.top; }catch(_){ framed=true; }
+  if(framed) return "";
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return '<section class="hint"><div class="row between"><h3>Put Spoons on your home screen</h3><button class="x" data-act="hidehint" aria-label="Dismiss">×</button></div>'+
+    '<p class="small muted">'+(ios? 'Tap Share, then Add to Home Screen.' : 'Tap the browser menu, then Install app or Add to Home screen.')+
+    ' It works offline from there, and your days stay safe.</p></section>';
 }
 function taskRow(t){
   const open = openTask===t.id;
@@ -597,13 +619,46 @@ function usualFor(wd, skipNames){ return S.presets.filter(p=>Array.isArray(p.day
 function closedView(k, day){
   const m = sums(day);
   const done = day.tasks.filter(t=>t.done);
-  let h = '<h1>Buona notte, Andy.</h1><p class="kind-words">Proud of you for trying.</p>'+
+  const allDone = day.tasks.length>0 && day.tasks.every(t=>t.done);
+  const gaveBack = m.giftsDone>0;
+  // his own words, the ones he says to other people, picked to fit the day
+  const kind = allDone? "You did so well today." : gaveBack? "Proud of you for taking care of yourself." : "Proud of you for trying.";
+  const mile = milestone(k);
+  let h = '<h1>Buona notte, Andy.</h1><p class="kind-words">'+kind+'</p>'+
     '<p class="muted" style="margin-top:4px">'+(done.length? done.length+' '+(done.length===1?'thing':'things')+' went in the jar today.' : 'Nothing ticked off, and the day still counted. Rest is a thing you did.')+'</p>';
+  if(mile) h += '<p class="milestone">'+mile+'</p>';
   h += '<div class="day-card" style="margin-top:20px">'+dayCardInner(k, day)+'</div>';
   if(S.carry.length) h+='<p class="small muted">'+S.carry.length+' '+(S.carry.length===1?'thing is':'things are')+' waiting for tomorrow.</p>';
   h += '<div class="row" style="margin-top:20px;gap:10px;flex-wrap:wrap"><button class="btn ghost small" data-act="reopen">Reopen today</button>'+
        '<button class="btn ghost small" data-act="share">Copy today\'s summary</button></div>';
   return h;
+}
+
+function jarTotalUpTo(k){ return Object.keys(S.days).filter(x=>x<=k && S.days[x].closed).reduce((a,x)=>a+S.days[x].tasks.filter(t=>t.done).length,0); }
+function milestone(k){
+  const closed = Object.keys(S.days).filter(x=>x<=k && S.days[x].closed).length;
+  const now = jarTotalUpTo(k), before = now - S.days[k].tasks.filter(t=>t.done).length;
+  const marks=[10,25,50,100,250,500,1000];
+  const crossed = marks.filter(n=>before<n && now>=n).pop();
+  if(crossed) return 'That\'s '+crossed+' things in the jar now.';
+  if(closed===7) return 'A whole week of days in the drawer.';
+  if(closed===30) return 'Thirty days. That\'s a lot of spoons, spent well.';
+  if(closed===100) return 'One hundred days. Look at you.';
+  return "";
+}
+/* this week, Monday to today */
+function weekSummary(){
+  const t=parseKey(todayKey()); const mon=new Date(t); mon.setDate(t.getDate()-((t.getDay()+6)%7));
+  const keys=[]; for(let d=new Date(mon); d<=t; d.setDate(d.getDate()+1)){ const k=keyOf(d); if(S.days[k]) keys.push(k); }
+  if(!keys.length) return "";
+  let done=0, back=0, low=null;
+  keys.forEach(k=>{ const d=S.days[k], m=sums(d); done+=d.tasks.filter(x=>x.done).length; back+=m.giftsDone; if(!low || d.budget<S.days[low].budget) low=k; });
+  return '<section class="week"><h2>This week</h2><div class="week-grid">'+
+    '<div><span class="big">'+done+'</span><span class="muted small">'+(done===1?'thing':'things')+' done</span></div>'+
+    '<div><span class="big honey">'+back+'</span><span class="muted small">'+spoonWord(back)+' given back</span></div>'+
+    '<div><span class="big">'+keys.length+'</span><span class="muted small">'+(keys.length===1?'day':'days')+' so far</span></div></div>'+
+    (keys.length>1? '<p class="small muted" style="margin-top:10px">Lowest start: '+WD_LONG[parseKey(low).getDay()]+', with '+S.days[low].budget+'. You got through it.</p>' : '')+
+  '</section>';
 }
 
 /* ================= add sheet ================= */
@@ -647,7 +702,8 @@ function jarView(){
   let h = '<h1>The jar</h1>';
   h += '<div class="jar-count"><span class="big">'+total+'</span><p class="muted">'+(total===1?'thing':'things')+' done across '+keys.length+' '+(keys.length===1?'day':'days')+'. Every one of them took a spoon.</p></div>';
   if(!keys.length) return h+'<div class="empty">When you close a day, what you got done lands here.</div>';
-  return h + keys.map(k=>'<div class="day-card">'+dayCardInner(k,S.days[k])+'</div>').join("");
+  h += weekSummary();
+  return h + '<h2 style="margin:26px 0 12px">Every day</h2>' + keys.map(k=>'<div class="day-card">'+dayCardInner(k,S.days[k])+'</div>').join("");
 }
 
 /* ================= patterns ================= */
@@ -808,6 +864,7 @@ function handle(act, el, e){
     case "pedit": editPreset = editPreset===id? null : id; render(); break;
     case "pnew": { const p={id:uid(),name:"New thing",cost:1,kind:"cost",days:[]}; S.presets.push(p); editPreset=p.id; save(); render();
       const inp=document.querySelector('[data-act="pname"][data-id="'+p.id+'"]'); if(inp){ inp.focus(); inp.select(); } break; }
+    case "hidehint": S.hideInstall=true; save(); render(); break;
     case "theme": S.theme=el.dataset.v; save(); applyTheme(); render(); break;
     case "pkind": { const p=S.presets.find(x=>x.id===id); if(!p) break; p.kind=el.dataset.k; save(); render(); break; }
     case "pday": { const p=S.presets.find(x=>x.id===id); if(!p) break; const d=+el.dataset.d; const i=p.days.indexOf(d);
@@ -933,6 +990,9 @@ document.addEventListener("submit", e=>{
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && !$layer.innerHTML) render(); });
 
 render();
+// home-screen shortcut: open straight into "Add to today"
+function handleHash(){ if(location.hash!=="#add") return; try{ history.replaceState(null,"",location.pathname); }catch(_){} if(S.welcomed && today() && !today().closed){ view="today"; render(); openAdd(); } }
+handleHash(); window.addEventListener("hashchange", handleHash);
 
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
